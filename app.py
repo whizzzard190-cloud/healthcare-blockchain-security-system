@@ -28,8 +28,13 @@ if menu=="Patient Signup":
     phone=st.text_input("Phone")
 
     if st.button("Register"):
-        patient_register(pid,password,name,age,gender,phone)
-        st.success("Patient Registered Successfully")
+
+        result = patient_register(pid,password,name,age,gender,phone)
+
+        if result=="exists":
+            st.error("Patient ID already exists")
+        else:
+            st.success("Patient Registered Successfully")
 
 # ---------------- PATIENT LOGIN ----------------
 if menu=="Patient Login":
@@ -48,7 +53,6 @@ if menu=="Patient Login":
             con=sqlite3.connect(DB)
             cur=con.cursor()
 
-            # ✅ ORDER BY DATE so updated visit appears first
             cur.execute("""
             SELECT h.name,h.location,a.date,t.amount,a.notes
             FROM appointments a
@@ -104,7 +108,7 @@ if menu=="Hospital Login":
         con=sqlite3.connect(DB)
         cur=con.cursor()
 
-        cur.execute("SELECT DISTINCT patient_id FROM appointments WHERE hospital_id=?",(hid,))
+        cur.execute("SELECT patient_id FROM patients")
         patients=[p[0] for p in cur.fetchall()]
 
         if patients:
@@ -125,20 +129,41 @@ if menu=="Hospital Login":
 
                     final_note=f"{category}: {personal_note}"
 
+                    # check if appointment already exists
                     cur.execute("""
-                    UPDATE appointments
-                    SET notes=?
-                    WHERE id = (
-                        SELECT id FROM appointments
-                        WHERE patient_id=? AND hospital_id=?
-                        ORDER BY id DESC LIMIT 1
-                    )
-                    """,(final_note,selected,hid))
+                    SELECT id FROM appointments
+                    WHERE patient_id=? AND hospital_id=?
+                    ORDER BY id DESC LIMIT 1
+                    """,(selected,hid))
+
+                    row=cur.fetchone()
+
+                    if row:
+
+                        cur.execute("""
+                        UPDATE appointments
+                        SET notes=?
+                        WHERE id=?
+                        """,(final_note,row[0]))
+
+                    else:
+
+                        # create new appointment if none exists
+                        cur.execute("""
+                        INSERT INTO appointments(patient_id,hospital_id,date,notes)
+                        VALUES(?,?,DATE('now'),?)
+                        """,(selected,hid,final_note))
+
+                        appointment_id=cur.lastrowid
+
+                        cur.execute("""
+                        INSERT INTO transactions(appointment_id,amount,status)
+                        VALUES(?,?,?)
+                        """,(appointment_id,500,"PAID"))
 
                     con.commit()
-                    con.close()
 
-                    st.success("Latest Medical Record Updated")
+                    st.success("Medical Record Updated")
                     st.rerun()
 
             with col2:
