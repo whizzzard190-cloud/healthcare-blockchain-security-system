@@ -43,6 +43,29 @@ def patient_login(pid,password):
     return r
 
 
+def hospital_register(hid,password,name):
+
+    con=sqlite3.connect(DB)
+    cur=con.cursor()
+
+    cur.execute("SELECT * FROM hospitals WHERE hospital_id=?", (hid,))
+    existing=cur.fetchone()
+
+    if existing:
+        con.close()
+        return "exists"
+
+    cur.execute("""
+    INSERT INTO hospitals(hospital_id,password,name)
+    VALUES(?,?,?)
+    """,(hid,generate_hash(password),name))
+
+    con.commit()
+    con.close()
+
+    return "success"
+
+
 def hospital_login(hid,password):
 
     con=sqlite3.connect(DB)
