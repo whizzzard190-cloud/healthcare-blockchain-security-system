@@ -1,11 +1,34 @@
 import streamlit as st
 import sqlite3
+import time
 from auth.auth_system import patient_login, patient_register, hospital_login, hospital_register
+from streamlit_autorefresh import st_autorefresh
 
 DB="database/healthcare.db"
 
 st.set_page_config(page_title="Blockchain Healthcare",layout="centered")
 
+# ---------------- AUTO LOGOUT (FIXED) ----------------
+SESSION_LIMIT = 1800  # 30 minutes
+
+if "login_time" not in st.session_state:
+    st.session_state.login_time = None
+
+if st.session_state.login_time:
+    elapsed = time.time() - st.session_state.login_time
+
+    if elapsed > SESSION_LIMIT:
+        st.session_state.clear()
+        st.warning("Session expired. Please login again.")
+        st.stop()
+
+    remaining = int(SESSION_LIMIT - elapsed)
+else:
+    remaining = SESSION_LIMIT
+
+st_autorefresh(interval=1000, key="timer_refresh")
+
+# ---------------- UI STYLE ----------------
 st.markdown("""
 <style>
 .stButton>button {
@@ -90,6 +113,7 @@ if st.session_state.page == "main":
             if user:
                 st.session_state.pid = pid
                 st.session_state.page = "patient_dashboard"
+                st.session_state.login_time = time.time()  # ✅ set once
                 st.rerun()
             else:
                 st.error("Invalid Credentials")
@@ -108,6 +132,7 @@ if st.session_state.page == "main":
             if hosp:
                 st.session_state.hid=hid
                 st.session_state.page="hospital_dashboard"
+                st.session_state.login_time = time.time()  # ✅ set once
                 st.rerun()
             else:
                 st.error("Invalid Credentials")
@@ -116,6 +141,7 @@ if st.session_state.page == "main":
 elif st.session_state.page == "patient_dashboard":
 
     st.markdown("## 🧑 Patient Dashboard")
+    st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
     col1, col2 = st.columns(2)
 
@@ -133,6 +159,7 @@ elif st.session_state.page == "patient_dashboard":
 elif st.session_state.page == "patient_history":
 
     st.markdown("## 📜 Medical History")
+    st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
     if st.button("⬅ Back"):
         st.session_state.page = "patient_dashboard"
@@ -167,6 +194,7 @@ elif st.session_state.page == "patient_history":
 elif st.session_state.page == "hospital_dashboard":
 
     st.markdown("## 🏥 Hospital Dashboard")
+    st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
     col1, col2, col3 = st.columns(3)
 
@@ -189,6 +217,7 @@ elif st.session_state.page == "hospital_dashboard":
 elif st.session_state.page == "update_record":
 
     st.markdown("## 📝 Update Record")
+    st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
     if st.button("⬅ Back"):
         st.session_state.page = "hospital_dashboard"
@@ -236,6 +265,7 @@ elif st.session_state.page == "update_record":
 elif st.session_state.page == "view_patient_history":
 
     st.markdown("## 📜 Patient History")
+    st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
     if st.button("⬅ Back"):
         st.session_state.page = "hospital_dashboard"
