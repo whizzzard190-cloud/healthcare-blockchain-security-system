@@ -8,8 +8,8 @@ DB="database/healthcare.db"
 
 st.set_page_config(page_title="Blockchain Healthcare",layout="centered")
 
-# ---------------- AUTO LOGOUT (FIXED) ----------------
-SESSION_LIMIT = 1800  # 30 minutes
+# ---------------- AUTO LOGOUT ----------------
+SESSION_LIMIT = 1800
 
 if "login_time" not in st.session_state:
     st.session_state.login_time = None
@@ -28,7 +28,7 @@ else:
 
 st_autorefresh(interval=1000, key="timer_refresh")
 
-# ---------------- UI STYLE ----------------
+# ---------------- UI ----------------
 st.markdown("""
 <style>
 .stButton>button {
@@ -38,23 +38,16 @@ st.markdown("""
     height: 3em;
     width: 100%;
 }
-.stTextInput>div>div>input {
-    border-radius: 8px;
-}
-.stSelectbox>div>div {
-    border-radius: 8px;
-}
 </style>
 """, unsafe_allow_html=True)
 
 if "page" not in st.session_state:
     st.session_state.page = "main"
 
-# ---------------- MAIN PAGE ----------------
+# ---------------- MAIN ----------------
 if st.session_state.page == "main":
 
     st.markdown("<h1 style='text-align:center;color:#4CAF50'>🏥 Blockchain Healthcare</h1>",unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align:center;'>Secure • Transparent • Decentralized</h4>",unsafe_allow_html=True)
     st.divider()
 
     menu=st.sidebar.selectbox(
@@ -62,10 +55,7 @@ if st.session_state.page == "main":
         ["Patient Login","Patient Signup","Hospital Login","Hospital Signup"],
     )
 
-    # ---------------- PATIENT SIGNUP ----------------
     if menu=="Patient Signup":
-
-        st.subheader("🧑 Patient Registration")
 
         pid=st.text_input("Patient ID")
         password=st.text_input("Password",type="password")
@@ -82,10 +72,7 @@ if st.session_state.page == "main":
             else:
                 st.success("Patient Registered Successfully")
 
-    # ---------------- HOSPITAL SIGNUP ----------------
     if menu=="Hospital Signup":
-
-        st.subheader("🏥 Hospital Registration")
 
         hid=st.text_input("Hospital ID")
         name=st.text_input("Hospital Name")
@@ -99,10 +86,7 @@ if st.session_state.page == "main":
             else:
                 st.success("Hospital Registered Successfully")
 
-    # ---------------- PATIENT LOGIN ----------------
     if menu=="Patient Login":
-
-        st.subheader("🧑 Patient Login")
 
         pid=st.text_input("Patient ID")
         password=st.text_input("Password",type="password")
@@ -113,15 +97,12 @@ if st.session_state.page == "main":
             if user:
                 st.session_state.pid = pid
                 st.session_state.page = "patient_dashboard"
-                st.session_state.login_time = time.time()  # ✅ set once
+                st.session_state.login_time = time.time()
                 st.rerun()
             else:
                 st.error("Invalid Credentials")
 
-    # ---------------- HOSPITAL LOGIN ----------------
     if menu=="Hospital Login":
-
-        st.subheader("🏥 Hospital Login")
 
         hid=st.text_input("Hospital ID")
         password=st.text_input("Password",type="password")
@@ -132,7 +113,7 @@ if st.session_state.page == "main":
             if hosp:
                 st.session_state.hid=hid
                 st.session_state.page="hospital_dashboard"
-                st.session_state.login_time = time.time()  # ✅ set once
+                st.session_state.login_time = time.time()
                 st.rerun()
             else:
                 st.error("Invalid Credentials")
@@ -143,17 +124,13 @@ elif st.session_state.page == "patient_dashboard":
     st.markdown("## 🧑 Patient Dashboard")
     st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
-    col1, col2 = st.columns(2)
+    if st.button("📜 Medical History"):
+        st.session_state.page = "patient_history"
+        st.rerun()
 
-    with col1:
-        if st.button("📜 Medical History"):
-            st.session_state.page = "patient_history"
-            st.rerun()
-
-    with col2:
-        if st.button("🚪 Logout"):
-            st.session_state.clear()
-            st.rerun()
+    if st.button("🚪 Logout"):
+        st.session_state.clear()
+        st.rerun()
 
 # ---------------- PATIENT HISTORY ----------------
 elif st.session_state.page == "patient_history":
@@ -196,22 +173,17 @@ elif st.session_state.page == "hospital_dashboard":
     st.markdown("## 🏥 Hospital Dashboard")
     st.caption(f"⏳ Auto logout in {remaining//60} min {remaining%60} sec")
 
-    col1, col2, col3 = st.columns(3)
+    if st.button("📝 Update"):
+        st.session_state.page = "update_record"
+        st.rerun()
 
-    with col1:
-        if st.button("📝 Update"):
-            st.session_state.page = "update_record"
-            st.rerun()
+    if st.button("📜 History"):
+        st.session_state.page = "view_patient_history"
+        st.rerun()
 
-    with col2:
-        if st.button("📜 History"):
-            st.session_state.page = "view_patient_history"
-            st.rerun()
-
-    with col3:
-        if st.button("🚪 Logout"):
-            st.session_state.clear()
-            st.rerun()
+    if st.button("🚪 Logout"):
+        st.session_state.clear()
+        st.rerun()
 
 # ---------------- UPDATE RECORD ----------------
 elif st.session_state.page == "update_record":
@@ -233,8 +205,7 @@ elif st.session_state.page == "update_record":
 
     selected=st.selectbox("Select Patient",patients)
 
-    category=st.selectbox(
-        "Medical Category",
+    category=st.selectbox("Medical Category",
         ["Routine","BP","MRI","Surgery","Diabetes","Chest Pain","Physio","Neuro","Cardiac","Ortho"]
     )
 
@@ -271,7 +242,14 @@ elif st.session_state.page == "view_patient_history":
         st.session_state.page = "hospital_dashboard"
         st.rerun()
 
-    pid = st.text_input("Enter Patient ID")
+    if "history_pid" not in st.session_state:
+        st.session_state.history_pid = ""
+
+    if "history_data" not in st.session_state:
+        st.session_state.history_data = []
+
+    pid = st.text_input("Enter Patient ID", value=st.session_state.history_pid)
+    st.session_state.history_pid = pid
 
     if st.button("Load"):
 
@@ -287,13 +265,13 @@ elif st.session_state.page == "view_patient_history":
         ORDER BY a.date DESC
         """,(pid,))
 
-        data=cur.fetchall()
+        st.session_state.history_data = cur.fetchall()
         con.close()
 
-        for row in data:
-            with st.container(border=True):
-                st.markdown(f"**🏥 {row[0]}**")
-                st.write(f"📍 {row[1]}")
-                st.write(f"📅 {row[2]}")
-                st.write(f"💰 ₹{row[3]}")
-                st.write(f"📝 {row[4]}")
+    for row in st.session_state.history_data:
+        with st.container(border=True):
+            st.markdown(f"**🏥 {row[0]}**")
+            st.write(f"📍 {row[1]}")
+            st.write(f"📅 {row[2]}")
+            st.write(f"💰 ₹{row[3]}")
+            st.write(f"📝 {row[4]}")
